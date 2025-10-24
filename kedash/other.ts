@@ -57,14 +57,28 @@ export const setQueryParams = (params: Record<string, any>) => {
   window.history.replaceState({}, '', newUrl)
 }
 
-export const tryParse = (str: string, fallback: any = null) => {
+interface ParseOptions {
+  normalize?: boolean
+}
+
+export const tryParse = (str: string, fallback: any = null, options: ParseOptions = {}) => {
   try {
-    const result = JSON.parse(str)
-    if (result) {
-      return result
+    const result = JSON.parse(str);
+    if (!!result) {
+      return options.normalize ? normalizeJSON(result) : result;
     }
-    return fallback
+    return fallback;
   } catch {
-    return fallback
+    return fallback;
   }
+}
+
+export const normalizeJSON = obj => {
+  return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
+    if (v === 'true') return [k, true]
+    if (v === 'false') return [k, false]
+    if (v === 'null') return [k, null]
+    if (v === 'undefined') return [k, undefined]
+    return [k, v]
+  }))
 }
