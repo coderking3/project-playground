@@ -57,6 +57,83 @@ function getCurrentDomWallpaperUrl() {
   return match ? match[1] : null
 }
 
+// 将图片URL转换为Base64
+async function imageUrlToBase64(url) {
+  try {
+    // 如果是 blob URL,使用 canvas 方式
+    if (url.startsWith('blob:')) {
+      return await blobToBase64ViaCanvas(url)
+    }
+
+    // 普通 URL,使用 fetch
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch (e) {
+    console.error('图片转换失败:', e)
+    return null
+  }
+}
+
+// 通过 Canvas 将 blob URL 转换为 Base64
+async function blobToBase64ViaCanvas(blobUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+
+        // 转换为 Base64 (JPEG 格式,质量 0.9)
+        const base64 = canvas.toDataURL('image/jpeg', 0.9)
+        resolve(base64)
+      } catch (e) {
+        reject(e)
+      }
+    }
+
+    img.onerror = (e) => {
+      console.error('图片加载失败:', e)
+      reject(e)
+    }
+
+    img.src = blobUrl
+  })
+}
+
+// 获取并保存原始壁纸(处理 blob URL)
+async function getAndSaveOriginalWallpaper() {
+  const oldUrl = getCurrentDomWallpaperUrl()
+  if (!oldUrl) return null
+
+  // 如果是 blob URL,转换为 Base64
+  if (oldUrl.startsWith('blob:')) {
+    console.log('检测到 blob URL,正在通过 Canvas 转换为 Base64...')
+    const base64Url = await imageUrlToBase64(oldUrl)
+    if (base64Url) {
+      console.log('原始壁纸转换成功')
+      return base64Url
+    } else {
+      console.warn('原始壁纸转换失败,将使用 blob URL(可能无法恢复)')
+      return oldUrl
+    }
+  }
+
+  // 普通 URL 直接返回
+  return oldUrl
+}
+
 // 获取Bing壁纸真实URL
 async function fetchBingWallpaperUrl() {
   try {
@@ -86,8 +163,13 @@ async function setWallpaper() {
     console.log('使用缓存的Bing壁纸')
   } else {
     // 需要重新请求新壁纸
-    // 从DOM获取旧壁纸URL(仅在没有缓存时)
-    oldUrl = getCurrentDomWallpaperUrl()
+    // 获取并保存原始壁纸(处理 blob URL)
+    oldUrl = await getAndSaveOriginalWallpaper()
+
+    if (!oldUrl) {
+      console.error('无法获取原始壁纸URL')
+      return
+    }
 
     // 请求获取真实的Bing壁纸URL
     newUrl = await fetchBingWallpaperUrl()
@@ -195,14 +277,9 @@ function createToggleButton() {
 const observer = new MutationObserver(() => {
   const wallpaperEl = getWallpaperElement()
   if (wallpaperEl) {
-    console.log(`🚀 ~ wallpaperEl:`, wallpaperEl)
     createToggleButton()
 
     // 如果模式开启,自动替换壁纸
-    console.log(
-      `🚀 ~ localStorage.getItem(STORAGE_KEY):`,
-      localStorage.getItem(STORAGE_KEY)
-    )
     if (localStorage.getItem(STORAGE_KEY) === 'true') {
       setWallpaper()
     }
@@ -210,4 +287,5 @@ const observer = new MutationObserver(() => {
     observer.disconnect() // 找到元素后停止观察
   }
 })
+
 observer.observe(document.body, { childList: true, subtree: true })
