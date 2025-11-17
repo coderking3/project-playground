@@ -119,6 +119,7 @@ async function setWallpaper() {
 function createToggleButton() {
   if (document.getElementById('bing-wallpaper-toggle')) return
 
+  console.log('创建Bing壁纸切换按钮')
   // 图片/壁纸相关的SVG图标(Base64编码)
   const iconSvg =
     'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgeD0iMyIgeT0iMyIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOSIgY3k9IjkiIHI9IjIiLz48cGF0aCBkPSJtMjEgMTUtMy4wODYtMy4wODZhMiAyIDAgMCAwLTIuODI4IDBMNiAyMSIvPjwvc3ZnPg=='
@@ -129,18 +130,22 @@ function createToggleButton() {
   btn.className =
     'absolute left-[20px] top-[20px] h-[36px] w-[36px] cursor-pointer rounded-[8px] p-[4px] text-[rgba(255,255,255,0.6)] transition-colors hover:bg-[rgba(0,0,0,0.15)] hover:text-[rgba(255,255,255,1)]'
 
-  // 创建内层 section (存储 SVG mask)
+  // 创建内层 section (存储 SVG mask) - 与 .hi-svg 样式一致
   const iconSection = document.createElement('section')
-  iconSection.className = 'h-full w-full bg-current'
+  iconSection.className = 'h-full w-full'
   iconSection.style.cssText = `
+    background-color: currentcolor;
+    color: inherit;
+    height: 100%;
+    width: 100%;
     mask-image: url("${iconSvg}");
-    mask-size: contain;
-    mask-repeat: no-repeat;
     mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: inherit;
     -webkit-mask-image: url("${iconSvg}");
-    -webkit-mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: inherit;
   `
 
   btn.appendChild(iconSection)
@@ -190,9 +195,14 @@ function createToggleButton() {
 const observer = new MutationObserver(() => {
   const wallpaperEl = getWallpaperElement()
   if (wallpaperEl) {
+    console.log(`🚀 ~ wallpaperEl:`, wallpaperEl)
     createToggleButton()
 
     // 如果模式开启,自动替换壁纸
+    console.log(
+      `🚀 ~ localStorage.getItem(STORAGE_KEY):`,
+      localStorage.getItem(STORAGE_KEY)
+    )
     if (localStorage.getItem(STORAGE_KEY) === 'true') {
       setWallpaper()
     }
@@ -200,5 +210,4 @@ const observer = new MutationObserver(() => {
     observer.disconnect() // 找到元素后停止观察
   }
 })
-
 observer.observe(document.body, { childList: true, subtree: true })
