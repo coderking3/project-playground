@@ -2,6 +2,9 @@
 const wallpaperApi = 'https://bing.ee123.net/img/4k' // Bing壁纸API
 const STORAGE_KEY = 'bingWallpaperMode' // 模式开关缓存key
 const CACHE_KEY = 'bingWallpaperCache' // 壁纸缓存key
+const MASK_STORAGE_KEY = 'bingWallpaperMaskVisible' // 蒙版显示状态缓存key
+const PICTURE_ICON =
+  'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDQ4IDQ4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0zOSA2SDlDNy4zNDMxNSA2IDYgNy4zNDMxNSA2IDlWMzlDNiA0MC42NTY5IDcuMzQzMTUgNDIgOSA0MkgzOUM0MC42NTY5IDQyIDQyIDQwLjY1NjkgNDIgMzlWOUM0MiA3LjM0MzE1IDQwLjY1NjkgNiAzOSA2WiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTE4IDIzQzIwLjc2MTQgMjMgMjMgMjAuNzYxNCAyMyAxOEMyMyAxNS4yMzg2IDIwLjc2MTQgMTMgMTggMTNDMTUuMjM4NiAxMyAxMyAxNS4yMzg2IDEzIDE4QzEzIDIwLjc2MTQgMTUuMjM4NiAyMyAxOCAyM1oiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik00MiAzNkwzMSAyNkwyMSAzNUwxNCAyOUw2IDM1IiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4='
 
 // ========== 辅助函数 ==========
 
@@ -43,6 +46,8 @@ function setCachedWallpaper(newUrl, oldUrl) {
 
 const getWallpaperElement = () =>
   document.querySelector('.home-wallpaper .transition-wallpaper')
+
+const getMaskElement = () => document.querySelector('.home-wallpaper .mask')
 
 // 获取当前DOM中的壁纸URL
 function getCurrentDomWallpaperUrl() {
@@ -146,6 +151,43 @@ async function fetchBingWallpaperUrl() {
   }
 }
 
+// 切换蒙版显示状态
+function toggleMask() {
+  const maskEl = getMaskElement()
+  if (!maskEl) {
+    console.warn('未找到蒙版元素')
+    return
+  }
+
+  // 获取当前显示状态
+  const currentDisplay = window.getComputedStyle(maskEl).display
+  const isVisible = currentDisplay !== 'none'
+
+  // 切换显示状态
+  if (isVisible) {
+    maskEl.style.display = 'none'
+    localStorage.setItem(MASK_STORAGE_KEY, 'false')
+    console.log('蒙版已隐藏')
+  } else {
+    maskEl.style.display = ''
+    localStorage.setItem(MASK_STORAGE_KEY, 'true')
+    console.log('蒙版已显示')
+  }
+}
+
+// 初始化蒙版状态
+function initMaskState() {
+  const maskEl = getMaskElement()
+  if (!maskEl) return
+
+  const maskVisible = localStorage.getItem(MASK_STORAGE_KEY)
+
+  // 如果缓存中设置为隐藏,则隐藏蒙版
+  if (maskVisible === 'false') {
+    maskEl.style.display = 'none'
+  }
+}
+
 // 设置壁纸
 async function setWallpaper() {
   const wallpaperEl = getWallpaperElement()
@@ -203,14 +245,13 @@ function createToggleButton() {
 
   console.log('创建Bing壁纸切换按钮')
   // 图片/壁纸相关的SVG图标(Base64编码)
-  const iconSvg =
-    'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDQ4IDQ4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0zOSA2SDlDNy4zNDMxNSA2IDYgNy4zNDMxNSA2IDlWMzlDNiA0MC42NTY5IDcuMzQzMTUgNDIgOSA0MkgzOUM0MC42NTY5IDQyIDQyIDQwLjY1NjkgNDIgMzlWOUM0MiA3LjM0MzE1IDQwLjY1NjkgNiAzOSA2WiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTE4IDIzQzIwLjc2MTQgMjMgMjMgMjAuNzYxNCAyMyAxOEMyMyAxNS4yMzg2IDIwLjc2MTQgMTMgMTggMTNDMTUuMjM4NiAxMyAxMyAxNS4yMzg2IDEzIDE4QzEzIDIwLjc2MTQgMTUuMjM4NiAyMyAxOCAyM1oiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik00MiAzNkwzMSAyNkwyMSAzNUwxNCAyOUw2IDM1IiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4='
+  const iconSvg = PICTURE_ICON
 
   // 创建外层 section - 基础样式
   const btn = document.createElement('section')
   btn.id = 'bing-wallpaper-toggle'
   btn.className =
-    'absolute left-[20px] top-[20px] h-[36px] w-[36px] cursor-pointer rounded-[8px] p-[4px] text-[rgba(255,255,255,0.6)] transition-all'
+    'absolute left-[20px] top-[20px] h-[36px] w-[36px] cursor-pointer rounded-[8px] p-[4px] text-[rgba(255,255,255,0.6)] hover:text-[rgba(255,255,255,1)] transition-all'
 
   // 创建内层 section (存储 SVG mask) - 与 .hi-svg 样式一致
   const iconSection = document.createElement('section')
@@ -239,19 +280,15 @@ function createToggleButton() {
   function updateButtonStyle() {
     // 未开启时的样式
     const disabledClasses = [
-      'text-[rgba(255,255,255,0.6)]',
-      'hover:text-[rgba(255,255,255,1)]',
+      'opacity-0',
+      'hover:opacity-100',
       'hover:bg-[rgba(0,0,0,0.15)]',
       'backdrop-blur-[20px]',
       'backdrop-saturate-150',
     ]
 
     // 开启时的样式
-    const enabledClasses = [
-      'text-[rgba(255,255,255,0.6)]',
-      'hover:text-[rgba(255,255,255,1)]',
-      'bg-[rgba(0,0,0,0.15)]',
-    ]
+    const enabledClasses = ['opacity-100', 'bg-[rgba(0,0,0,0.15)]']
 
     if (enabled) {
       // 开启状态
@@ -267,6 +304,10 @@ function createToggleButton() {
   // 初始化样式
   updateButtonStyle()
 
+  // 初始化蒙版状态
+  initMaskState()
+
+  // 左键点击 - 切换壁纸模式
   btn.addEventListener('click', () => {
     enabled = !enabled
     localStorage.setItem(STORAGE_KEY, enabled)
@@ -289,6 +330,12 @@ function createToggleButton() {
         }, 400)
       }
     }
+  })
+
+  // 右键点击 - 切换蒙版显示
+  btn.addEventListener('contextmenu', (e) => {
+    e.preventDefault() // 阻止默认右键菜单
+    toggleMask()
   })
 
   document.body.appendChild(btn)
